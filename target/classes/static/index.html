@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PureMed Pharmacy Management System</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💊</text></svg>">
+</head>
+<body>
+
+    <!-- Header Bar -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand-wrapper">
+                <div class="brand-icon">✚</div>
+                <div>
+                    <h1 class="brand-title" id="pharmacyNameHeader">Apex Medico & Wellness Pharmacy</h1>
+                    <span class="brand-subtitle">Pure Java In-Memory Architecture • Zero Database Setup</span>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <span class="status-badge">
+                    <span class="status-dot"></span>
+                    <span>System Active (Port 8080)</span>
+                </span>
+                <button class="seller-profile-btn" onclick="openSellerModal()">
+                    <span id="sellerUserBadge">👤 Admin</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs-wrapper">
+            <nav class="nav-tabs">
+                <button class="nav-tab-btn active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+                <button class="nav-tab-btn" onclick="switchTab('pos')">💊 Point of Sale (POS)</button>
+                <button class="nav-tab-btn" onclick="switchTab('inventory')">📦 Medicine Inventory</button>
+                <button class="nav-tab-btn" onclick="switchTab('khata')">📒 Customer Khata (Credit)</button>
+                <button class="nav-tab-btn" onclick="switchTab('pnl')">📈 Profit & Loss (P&L)</button>
+                <button class="nav-tab-btn" onclick="switchTab('restock')">🔮 Restock Estimator</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-container">
+
+        <!-- ================= 1. DASHBOARD TAB ================= -->
+        <section id="tab-dashboard" class="tab-pane active">
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Total Revenue</span>
+                        <span class="kpi-icon" style="background:#e0f2fe; color:#0284c7;">💵</span>
+                    </div>
+                    <div class="kpi-value" id="kpiRevenue">$0.00</div>
+                    <div class="kpi-subtext" id="kpiTransactions">0 total sales</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Gross Profit</span>
+                        <span class="kpi-icon" style="background:#dcfce7; color:#16a34a;">📈</span>
+                    </div>
+                    <div class="kpi-value" id="kpiGrossProfit" style="color:#16a34a;">$0.00</div>
+                    <div class="kpi-subtext" id="kpiMargin">Margin: 0%</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Pending Khata Debt</span>
+                        <span class="kpi-icon" style="background:#fee2e2; color:#dc2626;">📒</span>
+                    </div>
+                    <div class="kpi-value" id="kpiDebt" style="color:#dc2626;">$0.00</div>
+                    <div class="kpi-subtext">Active store receivables</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Inventory Value</span>
+                        <span class="kpi-icon" style="background:#fef3c7; color:#d97706;">📦</span>
+                    </div>
+                    <div class="kpi-value" id="kpiInventoryCost">$0.00</div>
+                    <div class="kpi-subtext" id="kpiInventoryRetail">Retail: $0.00</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Low Stock Items</span>
+                        <span class="kpi-icon" style="background:#fee2e2; color:#b91c1c;">⚠️</span>
+                    </div>
+                    <div class="kpi-value" id="kpiLowStock" style="color:#b91c1c;">0</div>
+                    <div class="kpi-subtext">Items with &lt; 10 units</div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Expiring Soon</span>
+                        <span class="kpi-icon" style="background:#fef3c7; color:#d97706;">⏳</span>
+                    </div>
+                    <div class="kpi-value" id="kpiNearExpiry">0</div>
+                    <div class="kpi-subtext" id="kpiExpiredText">0 expired</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions & Alerts -->
+            <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="switchTab('pos')">🛒 New Counter Sale</button>
+                <button class="btn btn-secondary" onclick="openAddMedicineModal()">✚ Add New Medicine</button>
+                <button class="btn btn-secondary" onclick="openAddBorrowerModal()">👤 Register New Borrower</button>
+                <button class="btn btn-secondary" onclick="switchTab('restock')">🔮 Check Restock Heuristics</button>
+            </div>
+
+            <!-- Recent Sales Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🕒 Recent Counter Sales & Invoices</h2>
+                    <button class="btn btn-secondary btn-sm" onclick="loadDashboard()">Refresh</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Medicine Name</th>
+                                <th>Qty</th>
+                                <th>Unit Price</th>
+                                <th>Total Revenue</th>
+                                <th>Gross Profit</th>
+                                <th>Payment Mode</th>
+                                <th>Customer</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentSalesTableBody">
+                            <tr><td colspan="9" style="text-align:center;">Loading sales records...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= 2. POINT OF SALE (POS) TAB ================= -->
+        <section id="tab-pos" class="tab-pane">
+            <div class="pos-layout">
+                <!-- Left: Catalog & Cart builder -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">💊 Dispense Medicine</h2>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Search Medicine to Dispense</label>
+                        <select id="posMedicineSelect" class="form-control" onchange="onPosMedicineSelect()">
+                            <option value="">-- Choose Medicine from Inventory --</option>
+                        </select>
+                    </div>
+
+                    <div id="posMedicineDetails" style="display:none; background:#f8fafc; padding:1rem; border-radius:var(--radius-sm); margin-bottom:1rem; border:1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+                            <strong id="posMedName">-</strong>
+                            <span class="badge" id="posMedStockBadge">0 in stock</span>
+                        </div>
+                        <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.5rem;" id="posMedGeneric">-</div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <span style="font-size:1.1rem; font-weight:700; color:var(--primary);">$<span id="posMedPrice">0.00</span></span>
+                                <span style="font-size:0.75rem; color:var(--text-muted);">/ unit</span>
+                            </div>
+                            <div style="display:flex; gap:0.5rem; align-items:center;">
+                                <label class="form-label" style="margin:0;">Quantity:</label>
+                                <input type="number" id="posQtyInput" class="form-control" style="width:75px;" value="1" min="1">
+                                <button class="btn btn-primary btn-sm" onclick="addToCart()">+ Add to Bill</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 style="font-size:0.95rem; font-weight:700; margin-bottom:0.5rem; color:var(--text-secondary);">Current Items in Bill</h3>
+                    <div id="cartItemsContainer" style="border:1px solid var(--border); border-radius:var(--radius-sm); min-height:120px;">
+                        <div style="padding:2rem; text-align:center; color:var(--text-muted);" id="emptyCartNotice">
+                            No medicines added yet. Select a medicine above to begin.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Billing & Payment options -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🧾 Checkout & Payment</h2>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Customer Name</label>
+                        <input type="text" id="posCustomerName" class="form-control" placeholder="Walk-in Customer (or select borrower below)">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Payment Mode</label>
+                        <select id="posPaymentMode" class="form-control" onchange="onPaymentModeChange()">
+                            <option value="CASH">💵 Cash</option>
+                            <option value="UPI">📱 UPI / QR Code</option>
+                            <option value="CARD">💳 Debit / Credit Card</option>
+                            <option value="CREDIT">📒 On Credit (Add to Customer Khata)</option>
+                        </select>
+                    </div>
+
+                    <div id="borrowerSelectGroup" class="form-group" style="display:none; background:#fff7ed; padding:0.75rem; border-radius:var(--radius-sm); border:1px solid #fed7aa;">
+                        <label class="form-label" style="color:#9a3412;">Select Customer Khata Account *</label>
+                        <select id="posBorrowerSelect" class="form-control" onchange="onBorrowerSelectChange()">
+                            <option value="">-- Choose Existing Borrower --</option>
+                        </select>
+                        <div id="borrowerDebtNotice" style="font-size:0.78rem; color:#c2410c; margin-top:0.35rem;"></div>
+                    </div>
+
+                    <div style="background:#f8fafc; padding:1rem; border-radius:var(--radius-sm); margin:1.25rem 0; border:1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+                            <span style="color:var(--text-secondary);">Subtotal:</span>
+                            <span style="font-weight:600;" id="billSubtotal">$0.00</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+                            <span style="color:var(--text-secondary);">Est. Gross Profit:</span>
+                            <span style="font-weight:600; color:var(--success);" id="billProfit">$0.00</span>
+                        </div>
+                        <hr style="border:none; border-top:1px dashed var(--border); margin:0.5rem 0;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:1.1rem; font-weight:700;">Grand Total:</span>
+                            <span style="font-size:1.5rem; font-weight:800; color:var(--primary);" id="billGrandTotal">$0.00</span>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-success" style="width:100%; padding:0.8rem; font-size:1rem;" onclick="processCheckout()">
+                        ✅ Complete Sale & Print Bill
+                    </button>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= 3. MEDICINE INVENTORY TAB ================= -->
+        <section id="tab-inventory" class="tab-pane">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title">📦 Medicine Inventory Management</h2>
+                        <span style="font-size:0.8rem; color:var(--text-secondary);">Real-time stock tracking with low-stock and expiry alerts</span>
+                    </div>
+                    <button class="btn btn-primary" onclick="openAddMedicineModal()">✚ Add New Medicine</button>
+                </div>
+
+                <div class="filter-bar">
+                    <div class="search-input-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="inventorySearch" class="search-input" placeholder="Search by name, generic, or batch..." onkeyup="filterInventoryTable()">
+                    </div>
+
+                    <div class="filter-pills">
+                        <button class="filter-pill active" onclick="setInventoryFilter('all', this)">All Medicines</button>
+                        <button class="filter-pill" onclick="setInventoryFilter('low-stock', this)">⚠️ Low Stock (&lt;10)</button>
+                        <button class="filter-pill" onclick="setInventoryFilter('near-expiry', this)">⏳ Near Expiry (&lt;60d)</button>
+                        <button class="filter-pill" onclick="setInventoryFilter('expired', this)">❌ Expired</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Medicine & Generic</th>
+                                <th>Batch #</th>
+                                <th>Stock Level</th>
+                                <th>Purchase Cost</th>
+                                <th>Selling Price</th>
+                                <th>Unit Margin</th>
+                                <th>Expiry Date</th>
+                                <th>Alert Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody">
+                            <tr><td colspan="9" style="text-align:center;">Loading medicines...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= 4. KHATA & CREDIT LEDGER TAB ================= -->
+        <section id="tab-khata" class="tab-pane">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title">📒 Customer Khata & Credit Ledger</h2>
+                        <span style="font-size:0.8rem; color:var(--text-secondary);">Track customer credit accounts, pending receivables, and repayments</span>
+                    </div>
+                    <div style="display:flex; gap:0.5rem;">
+                        <button class="btn btn-primary" onclick="openAddBorrowerModal()">✚ Register Borrower</button>
+                    </div>
+                </div>
+
+                <!-- Total Debt Summary Banner -->
+                <div style="background:linear-gradient(135deg, #fef2f2, #fee2e2); border:1px solid #fca5a5; border-radius:var(--radius-md); padding:1.25rem; margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <span style="font-size:0.85rem; font-weight:700; color:#991b1b; text-transform:uppercase; letter-spacing:0.5px;">Total Outstanding Store Debt</span>
+                        <div style="font-size:2rem; font-weight:800; color:#dc2626;" id="khataTotalDebt">$0.00</div>
+                        <span style="font-size:0.8rem; color:#7f1d1d;">Uncollected money lent on credit across all customer ledgers</span>
+                    </div>
+                    <button class="btn btn-danger btn-sm" onclick="loadKhataData()">Refresh Balances</button>
+                </div>
+
+                <!-- Borrower List Table -->
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Customer Name</th>
+                                <th>Phone Number</th>
+                                <th>Address</th>
+                                <th>Outstanding Debt</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="borrowersTableBody">
+                            <tr><td colspan="6" style="text-align:center;">Loading customer khata accounts...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= 5. PROFIT & LOSS (P&L) TAB ================= -->
+        <section id="tab-pnl" class="tab-pane">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title">📈 Profit & Loss (P&L) Calculator</h2>
+                        <span style="font-size:0.8rem; color:var(--text-secondary);">Real-time revenue, COGS, gross margins, and asset valuations</span>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <label class="form-label" style="margin:0;">Timeframe:</label>
+                        <select id="pnlDaysFilter" class="form-control" style="width:150px;" onchange="loadPnlData()">
+                            <option value="">All Time</option>
+                            <option value="30">Last 30 Days</option>
+                            <option value="7">Last 7 Days</option>
+                            <option value="1">Today</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- P&L Math Breakdown Cards -->
+                <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+                    <div class="kpi-card" style="border-left: 4px solid var(--primary);">
+                        <span class="kpi-label">Total Revenue</span>
+                        <div class="kpi-value" id="pnlRevenue">$0.00</div>
+                        <div class="kpi-subtext">∑ (Quantity Sold × Selling Price)</div>
+                    </div>
+
+                    <div class="kpi-card" style="border-left: 4px solid #ea580c;">
+                        <span class="kpi-label">Cost of Goods Sold (COGS)</span>
+                        <div class="kpi-value" id="pnlCogs" style="color:#ea580c;">$0.00</div>
+                        <div class="kpi-subtext">∑ (Quantity Sold × Purchase Cost)</div>
+                    </div>
+
+                    <div class="kpi-card" style="border-left: 4px solid var(--success);">
+                        <span class="kpi-label">Gross Profit</span>
+                        <div class="kpi-value" id="pnlProfit" style="color:var(--success);">$0.00</div>
+                        <div class="kpi-subtext">Revenue − COGS</div>
+                    </div>
+
+                    <div class="kpi-card" style="border-left: 4px solid #8b5cf6;">
+                        <span class="kpi-label">Gross Profit Margin</span>
+                        <div class="kpi-value" id="pnlMargin" style="color:#8b5cf6;">0.00%</div>
+                        <div class="kpi-subtext">(Gross Profit ÷ Revenue) × 100</div>
+                    </div>
+
+                    <div class="kpi-card" style="border-left: 4px solid var(--danger);">
+                        <span class="kpi-label">Pending Receivables</span>
+                        <div class="kpi-value" id="pnlReceivables" style="color:var(--danger);">$0.00</div>
+                        <div class="kpi-subtext">Outstanding Customer Debts</div>
+                    </div>
+
+                    <div class="kpi-card" style="border-left: 4px solid #0284c7;">
+                        <span class="kpi-label">Inventory Asset Value</span>
+                        <div class="kpi-value" id="pnlInventoryCost">$0.00</div>
+                        <div class="kpi-subtext" id="pnlInventoryRetail">Retail Potential: $0.00</div>
+                    </div>
+                </div>
+
+                <!-- Sales Margins Table -->
+                <h3 style="font-size:1rem; font-weight:700; margin:1.5rem 0 0.75rem 0;">Detailed Sales Transactions Margin Breakdown</h3>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Medicine Sold</th>
+                                <th>Quantity</th>
+                                <th>Unit Cost</th>
+                                <th>Selling Price</th>
+                                <th>Total Revenue</th>
+                                <th>COGS</th>
+                                <th>Net Profit</th>
+                                <th>Margin %</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pnlSalesTableBody">
+                            <tr><td colspan="10" style="text-align:center;">Loading breakdown...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= 6. NEXT-MONTH RESTOCK ESTIMATOR TAB ================= -->
+        <section id="tab-restock" class="tab-pane">
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title">🔮 Simple Next-Month Restock Estimator</h2>
+                        <span style="font-size:0.8rem; color:var(--text-secondary);">Deterministic statistical heuristic running purely in Java</span>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <label class="form-label" style="margin:0;">Lookback Period (N):</label>
+                        <select id="restockDaysSelect" class="form-control" style="width:130px;" onchange="loadRestockData()">
+                            <option value="30">30 Days</option>
+                            <option value="14">14 Days</option>
+                            <option value="7">7 Days</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Statistical Formula Explanation Box -->
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:var(--radius-md); padding:1rem 1.25rem; margin-bottom:1.5rem; font-size:0.85rem; color:#166534;">
+                    <div style="font-weight:700; margin-bottom:0.25rem;">Deterministic Pure Java Heuristic Algorithm:</div>
+                    <ul style="padding-left:1.25rem; margin:0.25rem 0;">
+                        <li><strong>Avg Daily Sales:</strong> <code>Total Units Sold in Last N Days ÷ N</code></li>
+                        <li><strong>Projected 30-Day Demand:</strong> <code>Avg Daily Sales × 30</code></li>
+                        <li><strong>Safety Buffer (20%):</strong> <code>Projected Demand × 0.20</code></li>
+                        <li><strong>Recommended Purchase:</strong> <code>max(0, Projected 30-Day Demand + Safety Buffer − Current Stock)</code></li>
+                    </ul>
+                </div>
+
+                <!-- Restock Forecast Table -->
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Medicine Name</th>
+                                <th>Current Stock</th>
+                                <th>Units Sold (Period)</th>
+                                <th>Avg Daily Rate</th>
+                                <th>30-Day Projected Demand</th>
+                                <th>20% Buffer</th>
+                                <th>Recommended Purchase Qty</th>
+                                <th>Unit Buy Cost</th>
+                                <th>Estimated Reorder Capital</th>
+                                <th>Urgency</th>
+                                <th>Quick Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="restockTableBody">
+                            <tr><td colspan="11" style="text-align:center;">Calculating restock forecasts...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- Add New Medicine Modal -->
+    <div id="modalAddMedicine" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="font-size:1.1rem; font-weight:700;">✚ Register New Medicine</h3>
+                <button class="close-btn" onclick="closeModal('modalAddMedicine')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addMedicineForm" onsubmit="submitAddMedicine(event)">
+                    <div class="form-group">
+                        <label class="form-label">Medicine Brand Name *</label>
+                        <input type="text" id="newMedName" class="form-control" placeholder="e.g. Paracetamol 500mg" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Generic / Chemical Name</label>
+                        <input type="text" id="newMedGeneric" class="form-control" placeholder="e.g. Acetaminophen">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Batch Number *</label>
+                            <input type="text" id="newMedBatch" class="form-control" placeholder="e.g. BAT-2026-X1" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Category</label>
+                            <input type="text" id="newMedCategory" class="form-control" placeholder="e.g. Analgesic, Antibiotic">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Initial Quantity in Stock *</label>
+                            <input type="number" id="newMedStock" class="form-control" min="0" value="50" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Expiry Date *</label>
+                            <input type="date" id="newMedExpiry" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Purchase Price ($) *</label>
+                            <input type="number" step="0.01" id="newMedPurchasePrice" class="form-control" placeholder="0.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Selling Price ($) *</label>
+                            <input type="number" step="0.01" id="newMedSellingPrice" class="form-control" placeholder="0.00" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Manufacturer / Supplier</label>
+                        <input type="text" id="newMedManufacturer" class="form-control" placeholder="e.g. Cipla, Sun Pharma">
+                    </div>
+                    <div class="modal-footer" style="padding:1rem 0 0 0; background:none;">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('modalAddMedicine')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Medicine</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Restock Batch Modal -->
+    <div id="modalRestockBatch" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="font-size:1.1rem; font-weight:700;">📥 Batch Restock Purchase</h3>
+                <button class="close-btn" onclick="closeModal('modalRestockBatch')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="restockBatchForm" onsubmit="submitRestockBatch(event)">
+                    <input type="hidden" id="restockMedId">
+                    <div style="background:#f8fafc; padding:0.75rem; border-radius:var(--radius-sm); margin-bottom:1rem; border:1px solid var(--border);">
+                        <strong id="restockMedNameDisplay">-</strong>
+                        <div style="font-size:0.8rem; color:var(--text-secondary);">Current Stock: <span id="restockCurrentStockDisplay" style="font-weight:700;">0</span> units</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quantity to Add *</label>
+                        <input type="number" id="restockQuantity" class="form-control" min="1" value="20" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">New Batch Number (Optional)</label>
+                        <input type="text" id="restockBatchNo" class="form-control" placeholder="Leave blank to keep current">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">New Purchase Cost ($)</label>
+                            <input type="number" step="0.01" id="restockNewPurchasePrice" class="form-control" placeholder="Leave blank if unchanged">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">New Selling Price ($)</label>
+                            <input type="number" step="0.01" id="restockNewSellingPrice" class="form-control" placeholder="Leave blank if unchanged">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">New Expiry Date (Optional)</label>
+                        <input type="date" id="restockNewExpiry" class="form-control">
+                    </div>
+                    <div class="modal-footer" style="padding:1rem 0 0 0; background:none;">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('modalRestockBatch')">Cancel</button>
+                        <button type="submit" class="btn btn-success">Confirm Restock</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register New Borrower Modal -->
+    <div id="modalAddBorrower" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="font-size:1.1rem; font-weight:700;">👤 Register New Customer Borrower</h3>
+                <button class="close-btn" onclick="closeModal('modalAddBorrower')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addBorrowerForm" onsubmit="submitAddBorrower(event)">
+                    <div class="form-group">
+                        <label class="form-label">Customer Full Name *</label>
+                        <input type="text" id="newBorrowerName" class="form-control" placeholder="e.g. Ramesh Patel" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone / WhatsApp Number *</label>
+                        <input type="text" id="newBorrowerPhone" class="form-control" placeholder="e.g. +91 98765 11223" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Address (Optional)</label>
+                        <input type="email" id="newBorrowerEmail" class="form-control" placeholder="e.g. customer@gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Residential Address</label>
+                        <textarea id="newBorrowerAddress" class="form-control" rows="2" placeholder="House #, Street name..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Initial Opening Balance ($)</label>
+                        <input type="number" step="0.01" id="newBorrowerInitialDebt" class="form-control" value="0.00">
+                    </div>
+                    <div class="modal-footer" style="padding:1rem 0 0 0; background:none;">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('modalAddBorrower')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Borrower Ledger Timeline Modal -->
+    <div id="modalBorrowerLedger" class="modal-overlay">
+        <div class="modal-content" style="max-width:750px;">
+            <div class="modal-header">
+                <div>
+                    <h3 style="font-size:1.1rem; font-weight:700;" id="ledgerModalTitle">Customer Ledger</h3>
+                    <div style="font-size:0.8rem; color:var(--text-secondary);" id="ledgerModalSubtitle">-</div>
+                </div>
+                <button class="close-btn" onclick="closeModal('modalBorrowerLedger')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:0.75rem 1rem; border-radius:var(--radius-sm); margin-bottom:1rem; border:1px solid var(--border);">
+                    <div>
+                        <span style="font-size:0.78rem; color:var(--text-secondary); text-transform:uppercase;">Current Outstanding Debt:</span>
+                        <div style="font-size:1.4rem; font-weight:800; color:var(--danger);" id="ledgerCurrentDebt">$0.00</div>
+                    </div>
+                    <div style="display:flex; gap:0.5rem;">
+                        <button class="btn btn-primary btn-sm" onclick="openIssueCreditFromLedger()">+ Issue Credit</button>
+                        <button class="btn btn-success btn-sm" onclick="openRecordPaymentFromLedger()">💵 Record Payment</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Transaction Type</th>
+                                <th>Amount</th>
+                                <th>Running Balance</th>
+                                <th>Method</th>
+                                <th>Note / Invoice</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ledgerTableBody">
+                            <tr><td colspan="6" style="text-align:center;">Loading ledger transactions...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Credit Action Modal (Issue Credit or Record Payment) -->
+    <div id="modalCreditAction" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="font-size:1.1rem; font-weight:700;" id="creditActionTitle">Record Transaction</h3>
+                <button class="close-btn" onclick="closeModal('modalCreditAction')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="creditActionForm" onsubmit="submitCreditAction(event)">
+                    <input type="hidden" id="creditActionBorrowerId">
+                    <input type="hidden" id="creditActionType"> <!-- 'credit' or 'payment' -->
+                    <div class="form-group">
+                        <label class="form-label">Amount ($) *</label>
+                        <input type="number" step="0.01" id="creditActionAmount" class="form-control" placeholder="0.00" min="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Payment Method</label>
+                        <select id="creditActionMethod" class="form-control">
+                            <option value="CASH">💵 Cash</option>
+                            <option value="UPI">📱 UPI / QR</option>
+                            <option value="CARD">💳 Bank Card</option>
+                            <option value="CREDIT">📒 Direct Credit Note</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Remarks / Note</label>
+                        <input type="text" id="creditActionNote" class="form-control" placeholder="e.g. Partial repayment via GPay">
+                    </div>
+                    <div class="modal-footer" style="padding:1rem 0 0 0; background:none;">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('modalCreditAction')">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="creditActionSubmitBtn">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Receipt Modal -->
+    <div id="modalInvoiceReceipt" class="modal-overlay">
+        <div class="modal-content" style="max-width:540px;">
+            <div class="modal-header">
+                <h3 style="font-size:1.1rem; font-weight:700;">🧾 Invoice Receipt</h3>
+                <button class="close-btn" onclick="closeModal('modalInvoiceReceipt')">&times;</button>
+            </div>
+            <div class="modal-body" id="invoiceReceiptBody" style="font-family:'Courier New', Courier, monospace; font-size:0.9rem; line-height:1.4;">
+                <!-- Generated dynamically in app.js -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modalInvoiceReceipt')">Close</button>
+                <button class="btn btn-primary" onclick="window.print()">🖨️ Print Receipt</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seller Profile Modal -->
+    <div id="modalSeller" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="font-size:1.1rem; font-weight:700;">⚙️ Seller & Pharmacy Profile</h3>
+                <button class="close-btn" onclick="closeModal('modalSeller')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="background:#f8fafc; padding:1rem; border-radius:var(--radius-sm); margin-bottom:1rem; border:1px solid var(--border);">
+                    <div style="font-size:1.1rem; font-weight:700;" id="sellerProfilePharmacyName">-</div>
+                    <div style="font-size:0.85rem; color:var(--text-secondary); margin-top:0.25rem;">
+                        <div>Username: <strong id="sellerProfileUsername">-</strong></div>
+                        <div>Phone: <span id="sellerProfilePhone">-</span></div>
+                        <div>Email: <span id="sellerProfileEmail">-</span></div>
+                        <div>Address: <span id="sellerProfileAddress">-</span></div>
+                    </div>
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-muted);">
+                    System running with in-memory persistence using Java Collections (ConcurrentHashMap, CopyOnWriteArrayList). All operations are thread-safe and instantaneous.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('modalSeller')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
